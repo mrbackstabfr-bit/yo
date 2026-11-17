@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101510">
+  <title>Loot Chest</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #101510;
+      color: #f4f0e5;
+      font-synthesis: none;
+    }
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 28px 16px;
+      overflow-x: hidden;
+      background: radial-gradient(ellipse at 50% 35%, #293723 0, #182019 38%, #101510 76%);
+    }
+    .game { width: min(100%, 520px); text-align: center; }
+    .eyebrow { color: #c3a86b; font-size: .75rem; font-weight: 800; letter-spacing: .24em; text-transform: uppercase; }
+    h1 { margin: 10px 0 8px; font-size: clamp(2.4rem, 9vw, 4rem); letter-spacing: -.055em; }
+    .subtitle { margin: 0 auto; max-width: 360px; color: #b6b9aa; line-height: 1.6; }
+    .scene {
+      position: relative;
+      display: grid;
+      min-height: 290px;
+      place-items: center;
+      margin: 18px 0 8px;
+      isolation: isolate;
+    }
+    .glow {
+      position: absolute;
+      z-index: -1;
+      width: 220px;
+      height: 150px;
+      border-radius: 50%;
+      background: #e7a942;
+      filter: blur(75px);
+      opacity: 0;
+      transition: opacity .5s ease;
+    }
+    .scene.is-open .glow { opacity: .38; }
+    .chest {
+      position: relative;
+      width: 204px;
+      height: 164px;
+      transform: translateY(8px);
+      filter: drop-shadow(0 22px 18px #0008);
+      transition: transform .25s ease;
+    }
+    .scene.is-open .chest { transform: translateY(4px) scale(1.04); }
+    .lid {
+      position: absolute;
+      z-index: 2;
+      top: 10px;
+      left: 7px;
+      width: 190px;
+      height: 67px;
+      border: 5px solid #402719;
+      border-radius: 48% 48% 8px 8px / 70% 70% 8px 8px;
+      background: linear-gradient(180deg, #bd8140, #87502c 75%);
+      transform-origin: 50% 100%;
+      transition: transform .65s cubic-bezier(.2,.8,.2,1);
+    }
+    .lid::before {
+      content: "";
+      position: absolute;
+      top: 13px;
+      left: 15px;
+      right: 15px;
+      height: 10px;
+      border-radius: 50%;
+      background: #d29b55;
+      opacity: .7;
+    }
+    .scene.is-open .lid { transform: translateY(-30px) rotate(-23deg); }
+    .box {
+      position: absolute;
+      bottom: 8px;
+      left: 0;
+      width: 204px;
+      height: 111px;
+      overflow: hidden;
+      border: 6px solid #402719;
+      border-radius: 8px 8px 17px 17px;
+      background: linear-gradient(90deg, #754327, #b9783b 18%, #a96632 82%, #694027);
+    }
+    .box::before {
+      content: "";
+      position: absolute;
+      inset: 12px 0 0;
+      background: repeating-linear-gradient(90deg, transparent 0 30px, #4b2d1d 31px 37px, transparent 38px 67px);
+      opacity: .72;
+    }
+    .band {
+      position: absolute;
+      z-index: 3;
+      top: 50px;
+      bottom: 10px;
+      left: 84px;
+      width: 36px;
+      border: 4px solid #806027;
+      background: linear-gradient(90deg, #d6b65d, #f1d77d, #aa823d);
+      box-shadow: 0 0 0 2px #4b321f;
+    }
+    .lock {
+      position: absolute;
+      z-index: 4;
+      top: 79px;
+      left: 91px;
+      width: 23px;
+      height: 28px;
+      border: 4px solid #72552a;
+      border-radius: 6px;
+      background: #e2c36d;
+      box-shadow: inset 0 0 0 2px #f4df9b;
+    }
+    .lock::after { content: ""; position: absolute; top: 6px; left: 7px; width: 3px; height: 8px; border-radius: 4px; background: #654624; }
+    .sparkles { position: absolute; top: 26px; width: 100%; color: #ffe599; font-size: 1.35rem; opacity: 0; transition: opacity .3s .25s; }
+    .scene.is-open .sparkles { opacity: 1; }
+    .open-button {
+      min-width: 190px;
+      padding: 15px 25px;
+      border: 1px solid #f1d77d;
+      border-radius: 12px;
+      color: #231b0e;
+      background: linear-gradient(180deg, #f2d783, #d6ad53);
+      box-shadow: 0 5px 0 #89682f, 0 12px 30px #0005;
+      font: inherit;
+      font-size: 1rem;
+      font-weight: 850;
+      cursor: pointer;
+      transition: transform .15s, filter .15s, box-shadow .15s;
+    }
+    .open-button:hover { filter: brightness(1.08); transform: translateY(-2px); }
+    .open-button:active { transform: translateY(3px); box-shadow: 0 2px 0 #89682f; }
+    .open-button:focus-visible { outline: 3px solid white; outline-offset: 4px; }
+    .result {
+      display: grid;
+      grid-template-rows: 0fr;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: grid-template-rows .35s ease, opacity .3s ease, transform .3s ease;
+    }
+    .result.show { grid-template-rows: 1fr; opacity: 1; transform: translateY(0); }
+    .result-inner { overflow: hidden; }
+    .loot-card {
+      margin: 24px auto 0;
+      padding: 20px;
+      border: 1px solid #ffffff20;
+      border-radius: 16px;
+      background: #171d17eF;
+      box-shadow: 0 14px 40px #0005;
+    }
+    .loot-card.common { border-color: #9da69b66; }
+    .loot-card.uncommon { border-color: #65cf8d88; box-shadow: 0 0 26px #37b76118; }
+    .loot-card.rare { border-color: #70aaffaa; box-shadow: 0 0 30px #4388ff24; }
+    .loot-card.legendary { border-color: #f3cb5aaa; box-shadow: 0 0 36px #f0ad2d35; }
+    .rarity { color: #aeb8a9; font-size: .7rem; font-weight: 850; letter-spacing: .2em; text-transform: uppercase; }
+    .uncommon .rarity { color: #72df9b; }
+    .rare .rarity { color: #88b7ff; }
+    .legendary .rarity { color: #ffda72; }
+    .loot-name { margin: 7px 0 4px; font-size: 1.65rem; font-weight: 850; }
+    .loot-description { margin: 0; color: #b6b9aa; font-size: .92rem; }
+    .hint { margin-top: 20px; color: #838b7d; font-size: .8rem; }
+    .hint strong { color: #c3a86b; }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <div class="eyebrow">Field supply drop</div>
+    <h1>Loot Chest</h1>
+    <p class="subtitle">Pop it open and see what the expedition left behind. A legendary sniper is the ultimate score.</p>
+
+    <section class="scene" id="scene" aria-label="A locked treasure chest">
+      <div class="glow" aria-hidden="true"></div>
+      <div class="sparkles" aria-hidden="true">✦ &nbsp; ✧ &nbsp; ✦</div>
+      <div class="chest" aria-hidden="true">
+        <div class="lid"></div>
+        <div class="box"></div>
+        <div class="band"></div>
+        <div class="lock"></div>
+      </div>
+    </section>
+
+    <button class="open-button" id="openButton" type="button">🔓 &nbsp; Open the chest</button>
+    <section class="result" id="result" aria-live="polite" aria-atomic="true">
+      <div class="result-inner">
+        <div class="loot-card" id="lootCard">
+          <div class="rarity" id="rarity"></div>
+          <div class="loot-name" id="lootName"></div>
+          <p class="loot-description" id="lootDescription"></p>
+        </div>
+      </div>
+    </section>
+    <p class="hint">Best drop: <strong>Legendary Sniper</strong> · 5% chance</p>
+  </main>
+  <script>
+    const loot = [
+      { name: "Bandage Kit", rarity: "Common", className: "common", description: "A few supplies to patch you up.", weight: 28 },
+      { name: "Ammo Pack", rarity: "Common", className: "common", description: "A handy stash of standard ammunition.", weight: 25 },
+      { name: "Smoke Grenade", rarity: "Uncommon", className: "uncommon", description: "Make a quick getaway under cover.", weight: 18 },
+      { name: "Medkit", rarity: "Uncommon", className: "uncommon", description: "A full field kit for a rough day.", weight: 12 },
+      { name: "Tactical Shotgun", rarity: "Rare", className: "rare", description: "A powerful close-range weapon.", weight: 7 },
+      { name: "Assault Rifle", rarity: "Rare", className: "rare", description: "A reliable rifle for the road ahead.", weight: 5 },
+      { name: "Legendary Sniper", rarity: "Legendary", className: "legendary", description: "The chest's best loot: a precision sniper rifle!", weight: 5 }
+    ];
+    const scene = document.getElementById("scene");
+    const button = document.getElementById("openButton");
+    const result = document.getElementById("result");
+    const card = document.getElementById("lootCard");
+    const rarity = document.getElementById("rarity");
+    const name = document.getElementById("lootName");
+    const description = document.getElementById("lootDescription");
+
+    button.addEventListener("click", () => {
+      const roll = Math.random() * loot.reduce((sum, item) => sum + item.weight, 0);
+      let total = 0;
+      const drop = loot.find(item => (total += item.weight) > roll);
+      scene.classList.add("is-open");
+      rarity.textContent = drop.rarity;
+      name.textContent = drop.name;
+      description.textContent = drop.description;
+      card.className = `loot-card ${drop.className}`;
+      result.classList.add("show");
+      button.textContent = "🔄  Open another chest";
+      scene.setAttribute("aria-label", "An open treasure chest");
+    });
+  </script>
+</body>
+</html>
